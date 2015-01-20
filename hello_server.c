@@ -1,7 +1,10 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <netinet/in.h> //otherwise it complains about INADDR_ANY
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <string.h>
 
 #define BUFFLEN 2000
 #define BACKLOG 10
@@ -11,17 +14,17 @@ int main(){
 
 	struct sockaddr_in servaddr, cliaddr;
 	socklen_t cliaddrlen = sizeof(cliaddr), servaddrlen = sizeof(servaddr);
-	ssize_t i, readcount;
+	ssize_t readcount;
 
 	char buffer[BUFFLEN];
-	char message[] = "Hello yourself.";
+	char message[] = "Hello yourself.\n";
 
 	int messagelen = strlen(message);
 	int filedesc, connfiledesc;
 
 	filedesc = socket(AF_INET, SOCK_STREAM, 0);
 	if(filedesc == -1) {
-		fprintf(stderr, "Could not create socket.");
+		fprintf(stderr, "Error creating socket.\n");
 		exit(1);
 	}
 
@@ -30,33 +33,35 @@ int main(){
 	servaddr.sin_port = htons(PORT);
 
 	if(bind(filedesc, (struct sockaddr *) &servaddr, servaddrlen) == -1) {
-		fprintf(stderr, "Could not bind socket.");
+		fprintf(stderr, "Error binding socket.\n");
 		exit(1);
 	}
 
 	if(listen(filedesc, BACKLOG) == -1) {
-		printf(stderr, "Could not activate socket listener.");
+		fprintf(stderr, "Error activating socket listener.\n");
 		exit(1);
 	}
 	
-	connfiledesc = accept(filedesc, (struct sockaddr *) &cliaddr, &cliaddrelen);
+	connfiledesc = accept(filedesc, (struct sockaddr *) &cliaddr, &cliaddrlen);
 	if(connfiledesc == -1) {
-		printf(stderr, "No response from client.");
+		fprintf(stderr, "No response from client.\n");
 		exit(1);
 	}
 
 	//read and print
 	readcount = read(connfiledesc, buffer, BUFFLEN);
 	if(readcount == -1){
-	  //handle error
+        fprintf(stderr, "Error reading client.\n");
+        exit(1);
 	}
 	
-	for(i = 0; i < BUFLEN, ++i){
-	  printf("%c", buf[i]);
+    for(ssize_t i = 0; i < BUFFLEN; ++i){
+	  printf("%c", buffer[i]);
 	}
 
 	if(write(connfiledesc, message, messagelen) == -1){
-		//handle error
+        fprintf(stderr, "Error writing to client.\n");
+        exit(1);
 	}
 
 	//clear buffer before next read
@@ -65,7 +70,8 @@ int main(){
 	//EOF read
 	readcount = read(connfiledesc, buffer, BUFFLEN);
 	if(readcount == -1) {
-		//handle error
+        fprintf(stderr, "Error terminating connection.\n");
+        exit(1);
 	}
 
 	//close connection
