@@ -13,7 +13,7 @@
 int main(){
 
 	struct sockaddr_in servaddr, cliaddr;
-	socklen_t servaddrlen = sizeof(servaddr);
+	socklen_t servaddrlen = sizeof(servaddr), cliaddrlen = sizeof(cliaddrlen);
 	ssize_t readcount;
 
 	char buffer[BUFFLEN];
@@ -21,9 +21,6 @@ int main(){
 
 	int messagelen = strlen(message);
 	int filedesc, connfiledesc;
-
-	memset(&servaddr, '0', servaddrlen);
-	memset(buffer, '0', BUFFLEN);
 
 	filedesc = socket(AF_INET, SOCK_STREAM, 0);
 	if(filedesc == -1){
@@ -34,53 +31,48 @@ int main(){
 	servaddr.sin_addr.s_addr = INADDR_ANY;
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_port = htons(PORT);
+    
 
 	if(bind(filedesc, (struct sockaddr *) &servaddr, servaddrlen) == -1){
 		fprintf(stderr, "Error binding socket.\n");
 		exit(1);
 	}
+    
+    while(1){
 
 	if(listen(filedesc, BACKLOG) == -1) {
 		fprintf(stderr, "Error activating socket listener.\n");
 		exit(1);
 	}
 	
-	connfiledesc = accept(filedesc, (struct sockaddr *) &cliaddr, sizeof(cliaddr));
+	connfiledesc = accept(filedesc, (struct sockaddr *) &cliaddr, &cliaddrlen);
 	if(connfiledesc == -1) {
 		fprintf(stderr, "No response from client.\n");
 		exit(1);
 	}
 
-	//read and print
+    
 	readcount = read(connfiledesc, buffer, BUFFLEN);
 	if(readcount == -1){
         fprintf(stderr, "Error reading client.\n");
         exit(1);
 	}
-	
-    for(ssize_t i = 0; i < BUFFLEN; ++i){
-	  printf("%c", buffer[i]);
-	}
+		
+    printf("%s", buffer);
 
 	if(write(connfiledesc, message, messagelen) == -1){
         fprintf(stderr, "Error writing to client.\n");
         exit(1);
 	}
+        
+    //clear buffer before next read
+    bzero(buffer, BUFFLEN);
+        
+    }
+    
+    close(filedesc);
 
-	//clear buffer before next read
-	bzero(buffer, BUFFLEN);
-
-	//EOF read
-	readcount = read(connfiledesc, buffer, BUFFLEN);
-	if(readcount == -1) {
-        fprintf(stderr, "Error terminating connection.\n");
-        exit(1);
-	}
-
-	//close connection
-	close(filedesc);
-
-	//exit
+    printf("Server has been disconnected.\n");
 
 	return 0;
 }
