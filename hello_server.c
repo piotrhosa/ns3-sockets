@@ -8,12 +8,12 @@
 
 #define BUFFLEN 2000
 #define BACKLOG 10
-#define PORT 80
+#define PORT 5000
 
 int main(){
 
 	struct sockaddr_in servaddr, cliaddr;
-	socklen_t cliaddrlen = sizeof(cliaddr), servaddrlen = sizeof(servaddr);
+	socklen_t servaddrlen = sizeof(servaddr);
 	ssize_t readcount;
 
 	char buffer[BUFFLEN];
@@ -22,8 +22,11 @@ int main(){
 	int messagelen = strlen(message);
 	int filedesc, connfiledesc;
 
+	memset(&servaddr, '0', servaddrlen);
+	memset(buffer, '0', BUFFLEN);
+
 	filedesc = socket(AF_INET, SOCK_STREAM, 0);
-	if(filedesc == -1) {
+	if(filedesc == -1){
 		fprintf(stderr, "Error creating socket.\n");
 		exit(1);
 	}
@@ -32,7 +35,7 @@ int main(){
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_port = htons(PORT);
 
-	if(bind(filedesc, (struct sockaddr *) &servaddr, servaddrlen) == -1) {
+	if(bind(filedesc, (struct sockaddr *) &servaddr, servaddrlen) == -1){
 		fprintf(stderr, "Error binding socket.\n");
 		exit(1);
 	}
@@ -42,7 +45,7 @@ int main(){
 		exit(1);
 	}
 	
-	connfiledesc = accept(filedesc, (struct sockaddr *) &cliaddr, &cliaddrlen);
+	connfiledesc = accept(filedesc, (struct sockaddr *) &cliaddr, sizeof(cliaddr));
 	if(connfiledesc == -1) {
 		fprintf(stderr, "No response from client.\n");
 		exit(1);
